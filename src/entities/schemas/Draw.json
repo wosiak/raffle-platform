@@ -1,0 +1,207 @@
+{
+  "name": "Draw",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "campaign_id": {
+      "type": "string",
+      "description": "Se vinculado a uma campanha"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "list",
+        "numeric_range",
+        "weighted",
+        "teams",
+        "shuffle",
+        "elimination"
+      ],
+      "description": "Tipo de sorteio"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "winners_club",
+        "partner_campaign",
+        "standalone"
+      ],
+      "default": "standalone"
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "winners_count": {
+          "type": "number",
+          "default": 1
+        },
+        "range_start": {
+          "type": "number"
+        },
+        "range_end": {
+          "type": "number"
+        },
+        "range_step": {
+          "type": "number",
+          "default": 1
+        },
+        "range_exclusions": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "range_inclusions": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "teams_count": {
+          "type": "number"
+        },
+        "team_size": {
+          "type": "number"
+        },
+        "balance_teams": {
+          "type": "boolean"
+        },
+        "remove_winner_after": {
+          "type": "boolean",
+          "default": false
+        },
+        "allow_duplicates": {
+          "type": "boolean",
+          "default": false
+        },
+        "use_weights": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "default": 1
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "prize": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "credits",
+            "voucher",
+            "physical",
+            "custom"
+          ]
+        },
+        "credits_amount": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string"
+        },
+        "image_url": {
+          "type": "string"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "locked",
+        "executed",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "locked_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "executed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "commit_hash": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "string"
+        },
+        "reveal_hash": {
+          "type": "string"
+        },
+        "items_hash": {
+          "type": "string"
+        },
+        "config_hash": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number"
+          },
+          "value": {
+            "type": "string"
+          },
+          "item_index": {
+            "type": "number"
+          },
+          "team": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "participants_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "organization_id",
+    "title",
+    "type"
+  ]
+}

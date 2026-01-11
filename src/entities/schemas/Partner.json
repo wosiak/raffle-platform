@@ -1,0 +1,110 @@
+{
+  "name": "Partner",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "food",
+        "beauty",
+        "health",
+        "entertainment",
+        "shopping",
+        "travel",
+        "services",
+        "education",
+        "other"
+      ]
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "social_links": {
+      "type": "object",
+      "properties": {
+        "instagram": {
+          "type": "string"
+        },
+        "facebook": {
+          "type": "string"
+        },
+        "tiktok": {
+          "type": "string"
+        }
+      }
+    },
+    "redemption_rules": {
+      "type": "object",
+      "properties": {
+        "min_credits": {
+          "type": "number"
+        },
+        "max_credits_per_transaction": {
+          "type": "number"
+        },
+        "credits_to_currency_rate": {
+          "type": "number"
+        },
+        "valid_days": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "valid_hours_start": {
+          "type": "string"
+        },
+        "valid_hours_end": {
+          "type": "string"
+        },
+        "requires_reservation": {
+          "type": "boolean"
+        },
+        "terms": {
+          "type": "string"
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "organization_id",
+    "name"
+  ]
+}

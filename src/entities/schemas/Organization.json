@@ -1,0 +1,133 @@
+{
+  "name": "Organization",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome da organiza\u00e7\u00e3o"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Slug \u00fanico para URL"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "winners_club",
+        "partner",
+        "white_label"
+      ],
+      "description": "Tipo de organiza\u00e7\u00e3o"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL do logo"
+    },
+    "primary_color": {
+      "type": "string",
+      "default": "#7C3AED"
+    },
+    "secondary_color": {
+      "type": "string",
+      "default": "#06B6D4"
+    },
+    "blur_intensity": {
+      "type": "number",
+      "default": 12
+    },
+    "border_radius": {
+      "type": "string",
+      "enum": [
+        "none",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "default": "lg"
+    },
+    "dark_mode": {
+      "type": "boolean",
+      "default": true
+    },
+    "reduce_motion": {
+      "type": "boolean",
+      "default": false
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "starter",
+        "pro",
+        "enterprise"
+      ],
+      "default": "free"
+    },
+    "plan_limits": {
+      "type": "object",
+      "properties": {
+        "max_participants_per_draw": {
+          "type": "number"
+        },
+        "draws_per_month": {
+          "type": "number"
+        },
+        "max_admins": {
+          "type": "number"
+        },
+        "history_retention_days": {
+          "type": "number"
+        },
+        "allow_exports": {
+          "type": "boolean"
+        },
+        "custom_branding": {
+          "type": "boolean"
+        },
+        "custom_domain": {
+          "type": "boolean"
+        },
+        "api_access": {
+          "type": "boolean"
+        }
+      }
+    },
+    "usage_this_month": {
+      "type": "object",
+      "properties": {
+        "draws_count": {
+          "type": "number",
+          "default": 0
+        },
+        "participants_total": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "trial"
+      ],
+      "default": "trial"
+    },
+    "custom_domain": {
+      "type": "string"
+    },
+    "webhook_url": {
+      "type": "string"
+    },
+    "api_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "type"
+  ]
+}

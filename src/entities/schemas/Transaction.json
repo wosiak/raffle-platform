@@ -1,0 +1,58 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "member_id": {
+      "type": "string"
+    },
+    "partner_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "credit_win",
+        "credit_redemption",
+        "credit_adjustment",
+        "voucher_generated",
+        "voucher_used"
+      ]
+    },
+    "amount": {
+      "type": "number"
+    },
+    "balance_before": {
+      "type": "number"
+    },
+    "balance_after": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    },
+    "draw_id": {
+      "type": "string"
+    },
+    "voucher_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "cancelled",
+        "expired"
+      ],
+      "default": "completed"
+    }
+  },
+  "required": [
+    "organization_id",
+    "type",
+    "amount"
+  ]
+}

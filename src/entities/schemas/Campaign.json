@@ -1,0 +1,166 @@
+{
+  "name": "Campaign",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "partner_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL amig\u00e1vel para landing page"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "like",
+              "share",
+              "comment",
+              "tag_friends",
+              "custom"
+            ]
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "instagram",
+              "tiktok",
+              "facebook",
+              "twitter",
+              "youtube",
+              "any"
+            ]
+          },
+          "target_url": {
+            "type": "string"
+          },
+          "target_username": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "validation_type": {
+            "type": "string",
+            "enum": [
+              "automatic",
+              "manual_link",
+              "manual_screenshot",
+              "partner_confirmation"
+            ]
+          },
+          "required": {
+            "type": "boolean",
+            "default": true
+          },
+          "extra_entries": {
+            "type": "number",
+            "default": 0
+          }
+        }
+      }
+    },
+    "prize_description": {
+      "type": "string"
+    },
+    "prize_image_url": {
+      "type": "string"
+    },
+    "winners_count": {
+      "type": "number",
+      "default": 1
+    },
+    "max_participants": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "paused",
+        "ended",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "require_email": {
+      "type": "boolean",
+      "default": true
+    },
+    "require_phone": {
+      "type": "boolean",
+      "default": false
+    },
+    "custom_fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "text",
+              "number",
+              "email",
+              "phone",
+              "select"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "terms_url": {
+      "type": "string"
+    },
+    "participants_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "organization_id",
+    "title",
+    "slug"
+  ]
+}

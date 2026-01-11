@@ -1,0 +1,78 @@
+{
+  "name": "Member",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string",
+      "description": "ID da organiza\u00e7\u00e3o"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "admin",
+        "moderator",
+        "member"
+      ],
+      "default": "member"
+    },
+    "credit_balance": {
+      "type": "number",
+      "default": 0
+    },
+    "total_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0
+    },
+    "wins_count": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "blocked"
+      ],
+      "default": "active"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "social_profiles": {
+      "type": "object",
+      "properties": {
+        "instagram": {
+          "type": "string"
+        },
+        "tiktok": {
+          "type": "string"
+        },
+        "facebook": {
+          "type": "string"
+        },
+        "twitter": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "organization_id",
+    "name"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "Voucher",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "member_id": {
+      "type": "string"
+    },
+    "partner_id": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "qr_data": {
+      "type": "string"
+    },
+    "credits_amount": {
+      "type": "number"
+    },
+    "currency_value": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "used",
+        "expired",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "used_by_partner_user": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "member_id",
+    "partner_id",
+    "code"
+  ]
+}

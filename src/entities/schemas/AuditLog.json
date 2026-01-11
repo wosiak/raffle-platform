@@ -1,0 +1,49 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "organization_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "draw_created",
+        "draw_edited",
+        "draw_locked",
+        "draw_executed",
+        "draw_cancelled",
+        "campaign_created",
+        "campaign_edited",
+        "entry_validated",
+        "entry_rejected",
+        "voucher_generated",
+        "voucher_redeemed",
+        "member_created",
+        "member_updated",
+        "partner_created",
+        "partner_updated",
+        "settings_changed"
+      ]
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "ip_address": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "organization_id",
+    "action"
+  ]
+}

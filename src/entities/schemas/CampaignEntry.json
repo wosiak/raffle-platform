@@ -1,0 +1,84 @@
+{
+  "name": "CampaignEntry",
+  "type": "object",
+  "properties": {
+    "campaign_id": {
+      "type": "string"
+    },
+    "organization_id": {
+      "type": "string"
+    },
+    "participant_name": {
+      "type": "string"
+    },
+    "participant_email": {
+      "type": "string"
+    },
+    "participant_phone": {
+      "type": "string"
+    },
+    "social_username": {
+      "type": "string"
+    },
+    "custom_data": {
+      "type": "object"
+    },
+    "rules_completion": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "validated": {
+            "type": "boolean"
+          },
+          "validation_type": {
+            "type": "string"
+          },
+          "evidence_url": {
+            "type": "string"
+          },
+          "evidence_screenshot_url": {
+            "type": "string"
+          },
+          "validated_by": {
+            "type": "string"
+          },
+          "validated_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "entries_count": {
+      "type": "number",
+      "default": 1,
+      "description": "N\u00famero de entradas no sorteio (pode ganhar extras)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "validated",
+        "rejected",
+        "winner"
+      ],
+      "default": "pending"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "participant_name"
+  ]
+}
