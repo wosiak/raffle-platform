@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -82,6 +82,7 @@ export default function NewDraw() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
+  const [organization, setOrganization] = useState(null);
   const [step, setStep] = useState(1);
   const [drawType, setDrawType] = useState(null);
   const [draw, setDraw] = useState({
@@ -108,6 +109,21 @@ export default function NewDraw() {
   const [enableVerification, setEnableVerification] = useState(false);
   const [verification, setVerification] = useState(null);
   const [results, setResults] = useState(null);
+
+  // Carregar organização
+  useEffect(() => {
+    async function loadOrganization() {
+      try {
+        const orgs = await base44.entities.Organization.list();
+        if (orgs.length > 0) {
+          setOrganization(orgs[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar organização:', error);
+      }
+    }
+    loadOrganization();
+  }, []);
 
   const updateDraw = (updates) => {
     setDraw(prev => ({ ...prev, ...updates }));
@@ -248,9 +264,13 @@ export default function NewDraw() {
     }
 
     // Save to database
+    if (!organization?.id) {
+      throw new Error('Organização não carregada. Por favor, recarregue a página.');
+    }
+
     const drawData = {
       ...draw,
-      organization_id: 'default',
+      organization_id: organization.id,
       items: pool,
       results: drawResults,
       status: 'executed',
@@ -264,7 +284,7 @@ export default function NewDraw() {
 
     // Log to audit
     await base44.entities.AuditLog.create({
-      organization_id: 'default',
+      organization_id: organization.id,
       action: 'draw_executed',
       entity_type: 'Draw',
       details: {

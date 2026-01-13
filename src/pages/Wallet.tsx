@@ -106,13 +106,16 @@ export default function WalletPage() {
 
   const redeemMutation = useMutation({
     mutationFn: async ({ partner, amount }) => {
+      if (!member?.organization_id) {
+        throw new Error('Membro não possui organização. Por favor, recarregue a página.');
+      }
       const rate = partner.redemption_rules?.credits_to_currency_rate || 1;
       const currencyValue = amount / rate;
       const voucherCode = `WC${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       
       // Create voucher
       const voucher = await base44.entities.Voucher.create({
-        organization_id: 'default',
+        organization_id: member.organization_id,
         member_id: member.id,
         partner_id: partner.id,
         code: voucherCode,
@@ -125,7 +128,7 @@ export default function WalletPage() {
 
       // Create transaction
       await base44.entities.Transaction.create({
-        organization_id: 'default',
+        organization_id: member.organization_id,
         member_id: member.id,
         partner_id: partner.id,
         type: 'voucher_generated',

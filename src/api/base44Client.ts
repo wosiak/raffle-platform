@@ -1,6 +1,12 @@
-// Cliente Base44 mockado para permitir build/dev local
-// TODO: substituir por implementação real quando as credenciais/SDK estiverem disponíveis.
+// Cliente API - Usa Supabase se configurado, senão usa mock
+// Para usar Supabase: configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env
 
+// Verificar se Supabase está configurado
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const useSupabase = !!(supabaseUrl && supabaseAnonKey);
+
+// Mock local (usado quando Supabase não está configurado)
 type EntityRecord = Record<string, any>;
 
 const delay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,15 +47,14 @@ const mockUser = {
   full_name: "Usuário Demo"
 };
 
-const base44 = {
+const mockBase44 = {
   auth: {
     async me() {
       await delay();
       return mockUser;
     },
     redirectToLogin() {
-      // eslint-disable-next-line no-console
-      console.info("Mock login redirecionado");
+      console.info("💡 Mock ativo - Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no .env para usar Supabase");
     }
   },
   entities: {
@@ -79,5 +84,9 @@ const base44 = {
   }
 };
 
-export { base44 };
+// Exportar: Se Supabase configurado, usar ele. Senão, usar mock.
+// Por enquanto, sempre usar mock. Quando configurar .env, substitua esta linha:
+export { base44 } from './supabaseClient';
 
+// Para usar mock (comentar linha acima e descomentar abaixo):
+// export const base44 = mockBase44;

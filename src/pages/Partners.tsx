@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -74,6 +74,7 @@ const statusColors = {
 
 export default function Partners() {
   const queryClient = useQueryClient();
+  const [organization, setOrganization] = useState(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
   const [newPartner, setNewPartner] = useState({
@@ -95,16 +96,36 @@ export default function Partners() {
     featured: false
   });
 
+  // Carregar organização
+  useEffect(() => {
+    async function loadOrganization() {
+      try {
+        const orgs = await base44.entities.Organization.list();
+        if (orgs.length > 0) {
+          setOrganization(orgs[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar organização:', error);
+      }
+    }
+    loadOrganization();
+  }, []);
+
   const { data: partners = [], isLoading } = useQuery({
     queryKey: ['partners'],
     queryFn: () => base44.entities.Partner.filter({}, '-created_date', 100),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Partner.create({
-      ...data,
-      organization_id: 'default'
-    }),
+    mutationFn: (data) => {
+      if (!organization?.id) {
+        throw new Error('Organização não carregada. Por favor, recarregue a página.');
+      }
+      return base44.entities.Partner.create({
+        ...data,
+        organization_id: organization.id
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partners'] });
       setShowCreateDialog(false);

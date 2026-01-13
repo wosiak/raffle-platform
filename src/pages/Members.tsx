@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -87,19 +87,39 @@ export default function Members() {
     status: 'active'
   });
 
+  // Carregar organização
+  useEffect(() => {
+    async function loadOrganization() {
+      try {
+        const orgs = await base44.entities.Organization.list();
+        if (orgs.length > 0) {
+          setOrganization(orgs[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar organização:', error);
+      }
+    }
+    loadOrganization();
+  }, []);
+
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['members'],
     queryFn: () => base44.entities.Member.filter({}, '-created_date', 100),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Member.create({
-      ...data,
-      organization_id: 'default',
-      total_earned: 0,
-      total_spent: 0,
-      wins_count: 0
-    }),
+    mutationFn: (data) => {
+      if (!organization?.id) {
+        throw new Error('Organização não carregada. Por favor, recarregue a página.');
+      }
+      return base44.entities.Member.create({
+        ...data,
+        organization_id: organization.id,
+        total_earned: 0,
+        total_spent: 0,
+        wins_count: 0
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['members'] });
       setShowCreateDialog(false);
@@ -124,13 +144,16 @@ export default function Members() {
 
   const adjustCreditMutation = useMutation({
     mutationFn: async ({ member, amount }) => {
+      if (!organization?.id) {
+        throw new Error('Organização não carregada. Por favor, recarregue a página.');
+      }
       const newBalance = (member.credit_balance || 0) + amount;
       await base44.entities.Member.update(member.id, { 
         credit_balance: newBalance,
         total_earned: amount > 0 ? (member.total_earned || 0) + amount : member.total_earned
       });
       await base44.entities.Transaction.create({
-        organization_id: 'default',
+        organization_id: organization.id,
         member_id: member.id,
         type: 'credit_adjustment',
         amount: amount,
