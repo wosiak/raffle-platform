@@ -1,47 +1,98 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import Home from "@/pages/Home";
-import NewDraw from "@/pages/NewDraw";
-import DrawHistory from "@/pages/DrawHistory";
-import CreateRaffle from "@/pages/CreateRaffle";
-import Raffles from "@/pages/Raffles";
-import Campaigns from "@/pages/Campaigns";
-import CampaignEntries from "@/pages/CampaignEntries";
-import CampaignLanding from "@/pages/CampaignLanding";
-import Members from "@/pages/Members";
-import Partners from "@/pages/Partners";
-import Settings from "@/pages/Settings";
-import Testimonials from "@/pages/Testimonials";
-import ThankYou from "@/pages/ThankYou";
-import Wallet from "@/pages/Wallet";
-import { appRoutes } from "@/utils";
-import TopNavbar from "@/components/layout/TopNavbar";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+// Pages
+import Login from '@/pages/Login';
+import MasterCompanies from '@/pages/master/Companies';
+import CompanyDashboard from '@/pages/company/Dashboard';
+import CompanyDraws from '@/pages/company/Draws';
+import CompanyNewDraw from '@/pages/company/NewDraw';
+import CompanyExecuteDraw from '@/pages/company/ExecuteDraw';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <TopNavbar />
-      <main className="pt-24 pb-10">
-        <Routes>
-          <Route path={appRoutes.Home} element={<Home />} />
-          <Route path={appRoutes.NewDraw} element={<NewDraw />} />
-          <Route path={appRoutes.DrawHistory} element={<DrawHistory />} />
-          <Route path={appRoutes.CreateRaffle} element={<CreateRaffle />} />
-          <Route path={appRoutes.Raffles} element={<Raffles />} />
-          <Route path={appRoutes.Campaigns} element={<Campaigns />} />
-          <Route path={appRoutes.CampaignEntries} element={<CampaignEntries />} />
-          <Route path={appRoutes.CampaignLanding} element={<CampaignLanding />} />
-          <Route path={appRoutes.Members} element={<Members />} />
-          <Route path={appRoutes.Partners} element={<Partners />} />
-          <Route path={appRoutes.Settings} element={<Settings />} />
-          <Route path={appRoutes.Testimonials} element={<Testimonials />} />
-          <Route path={appRoutes.ThankYou} element={<ThankYou />} />
-          <Route path={appRoutes.Wallet} element={<Wallet />} />
-          <Route path="*" element={<Navigate to={appRoutes.Home} replace />} />
-        </Routes>
-      </main>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <Routes>
+            {/* Login geral */}
+            <Route path="/login" element={<Login />} />
+            
+            {/* Login por empresa */}
+            <Route path="/:companySlug/login" element={<Login />} />
+            
+            {/* Área Master */}
+            <Route
+              path="/master/companies"
+              element={
+                <ProtectedRoute requireMaster>
+                  <MasterCompanies />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Área da Empresa */}
+            <Route
+              path="/:companySlug/dashboard"
+              element={
+                <ProtectedRoute>
+                  <CompanyDashboard />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/:companySlug/draws"
+              element={
+                <ProtectedRoute>
+                  <CompanyDraws />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/:companySlug/draws/new"
+              element={
+                <ProtectedRoute>
+                  <CompanyNewDraw />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/:companySlug/draws/:drawId/execute"
+              element={
+                <ProtectedRoute>
+                  <CompanyExecuteDraw />
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Redirect root to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            
+            {/* 404 */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+          
+          <Toaster position="top-right" richColors />
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
 export default App;
-
