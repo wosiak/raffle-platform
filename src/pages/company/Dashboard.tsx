@@ -15,8 +15,9 @@ import {
   LogOut,
   ArrowLeft,
   TrendingUp,
-  Users,
-  Calendar
+  Users as UsersIcon,
+  Calendar,
+  Settings
 } from 'lucide-react';
 
 export default function CompanyDashboard() {
@@ -156,7 +157,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -192,6 +193,26 @@ export default function CompanyDashboard() {
                 <GradientButton>
                   <History className="w-4 h-4 mr-2" />
                   Ver Sorteios
+                </GradientButton>
+              </Link>
+            </GlassCard>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <GlassCard className="p-8">
+              <UsersIcon className="w-12 h-12 text-green-500 mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Usuários</h2>
+              <p className="text-gray-600 mb-6">
+                Gerencie os usuários da empresa
+              </p>
+              <Link to={`/${companySlug}/users`}>
+                <GradientButton>
+                  <UsersIcon className="w-4 h-4 mr-2" />
+                  Gerenciar
                 </GradientButton>
               </Link>
             </GlassCard>

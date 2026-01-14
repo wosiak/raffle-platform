@@ -12,6 +12,7 @@ import CompanyDashboard from '@/pages/company/Dashboard';
 import CompanyDraws from '@/pages/company/Draws';
 import CompanyNewDraw from '@/pages/company/NewDraw';
 import CompanyExecuteDraw from '@/pages/company/ExecuteDraw';
+import CompanyUsers from '@/pages/company/Users';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CompanyExecuteDraw />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/:companySlug/users"
+              element={
+                <ProtectedRoute>
+                  <CompanyUsers />
                 </ProtectedRoute>
               }
             />

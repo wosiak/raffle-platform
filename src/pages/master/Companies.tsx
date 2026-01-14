@@ -167,13 +167,6 @@ export default function MasterCompanies() {
                 <GlassCard className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <Building2 className="w-10 h-10 text-violet-500" />
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      company.status === 'active' 
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {company.status}
-                    </span>
                   </div>
                   
                   <h3 className="text-xl font-bold mb-2">{company.name}</h3>
