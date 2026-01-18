@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Supabase não configurado');
     }
 
-    // Buscar usuário e verificar senha usando crypt do PostgreSQL
+    // Buscar usuário e verificar senha usando função do PostgreSQL
     const { data, error } = await supabase
       .rpc('login_user', { 
         p_email: email, 
@@ -81,21 +81,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const userData = data[0];
     
+    console.log('Login response:', userData); // Debug
+    
     const userObj: User = {
-      id: userData.id,
-      name: userData.name,
-      email: userData.email,
-      is_master: userData.is_master,
+      id: userData.user_id,              // Campo correto: user_id
+      name: userData.user_name,          // Campo correto: user_name
+      email: userData.user_email,        // Campo correto: user_email
+      is_master: userData.user_role === 'master', // Derivado do role
       company_id: userData.company_id,
       company_name: userData.company_name,
       company_slug: userData.company_slug,
     };
-
-    // Atualizar last_login_at
-    await supabase
-      .from('users')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', userData.id);
 
     setUser(userObj);
     localStorage.setItem('user', JSON.stringify(userObj));
