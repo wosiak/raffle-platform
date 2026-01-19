@@ -104,10 +104,10 @@ export default function Login() {
           <div className="mt-6 text-center text-sm text-gray-500">
             <p>Credenciais de teste:</p>
             <p className="mt-2">
-              <strong>Master:</strong> master@sistema.com / master123
+              <strong>Master:</strong> master@admin.com / master123
             </p>
             <p>
-              <strong>Admin:</strong> admin@empresa01.com / admin123
+              <strong>Admin:</strong> admin@empresa01.com / empresa01
             </p>
           </div>
         </GlassCard>

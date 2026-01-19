@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -11,35 +11,23 @@ import GlassCard from '@/components/ui/GlassCard';
 import GradientButton from '@/components/ui/GradientButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   ArrowLeft, 
   Plus, 
   Sparkles,
   Clock,
   CheckCircle,
-  XCircle,
-  Lock
+  ChevronDown,
+  ChevronUp,
+  Users
 } from 'lucide-react';
-
-const statusColors = {
-  draft: 'bg-gray-100 text-gray-700',
-  locked: 'bg-amber-100 text-amber-700',
-  executed: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
-};
-
-const statusIcons = {
-  draft: Clock,
-  locked: Lock,
-  executed: CheckCircle,
-  cancelled: XCircle,
-};
 
 const typeLabels = {
   list: 'Lista',
+  all_participants: 'Participantes',
   numeric_range: 'Numérico',
   weighted: 'Ponderado',
-  teams: 'Times',
   shuffle: 'Embaralhar',
   elimination: 'Eliminação',
 };
@@ -48,6 +36,7 @@ export default function CompanyDraws() {
   const { companySlug } = useParams<{ companySlug: string }>();
   const navigate = useNavigate();
   const { getCurrentCompanyId, isMaster, exitImpersonate } = useAuth();
+  const [openParticipants, setOpenParticipants] = useState<Record<string, boolean>>({});
 
   const { data: draws = [], isLoading } = useQuery({
     queryKey: ['draws', getCurrentCompanyId()],
@@ -126,8 +115,6 @@ export default function CompanyDraws() {
         ) : (
           <div className="space-y-4">
             {draws.map((draw, index) => {
-              const StatusIcon = statusIcons[draw.status as keyof typeof statusIcons];
-              
               return (
                 <motion.div
                   key={draw.id}
@@ -140,18 +127,80 @@ export default function CompanyDraws() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-xl font-bold">{draw.title}</h3>
-                          <Badge className={statusColors[draw.status as keyof typeof statusColors]}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {draw.status}
-                          </Badge>
                           <Badge variant="outline">
                             {typeLabels[draw.type as keyof typeof typeLabels] || draw.type}
                           </Badge>
+                          {draw.executed_at && (
+                            <Badge className="bg-green-100 text-green-700">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Executado
+                            </Badge>
+                          )}
+                          {!draw.executed_at && (
+                            <Badge className="bg-gray-100 text-gray-700">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Pendente
+                            </Badge>
+                          )}
                         </div>
                         
                         {draw.description && (
                           <p className="text-gray-600 mb-3">{draw.description}</p>
                         )}
+                        
+                        {/* Mostrar participantes */}
+                        {draw.items && Array.isArray(draw.items) && draw.items.length > 0 && (
+                          <Collapsible
+                            open={openParticipants[draw.id]}
+                            onOpenChange={(isOpen) => setOpenParticipants({ ...openParticipants, [draw.id]: isOpen })}
+                            className="mb-3"
+                          >
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="sm" className="gap-2 text-violet-600 hover:text-violet-700">
+                                <Users className="w-4 h-4" />
+                                <span>
+                                  {draw.items.length} participante{draw.items.length !== 1 ? 's' : ''}
+                                </span>
+                                {openParticipants[draw.id] ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="mt-2">
+                              <div className="bg-gradient-to-br from-violet-50 to-cyan-50 rounded-lg p-3 max-h-48 overflow-y-auto border border-violet-100">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                  {draw.items.map((item: any, idx: number) => (
+                                    <div 
+                                      key={item.id || idx}
+                                      className="bg-white/80 backdrop-blur-sm rounded-md px-3 py-2 text-sm flex items-center justify-between shadow-sm border border-violet-200 hover:border-violet-400 hover:bg-white transition-all"
+                                    >
+                                      <span className="font-medium text-violet-900">{item.value}</span>
+                                      {item.weight && item.weight !== 1 && (
+                                        <Badge className="ml-2 text-xs bg-violet-100 text-violet-700 hover:bg-violet-200">
+                                          Peso: {item.weight}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        )}
+                        
+                        {/* Configurações especiais para sorteios numéricos */}
+                        {draw.type === 'numeric_range' && draw.config && (
+                          <div className="mb-3">
+                            <Badge variant="outline" className="text-xs">
+                              Faixa: {draw.config.min || 1} até {draw.config.max || 100}
+                              {draw.config.count && draw.config.count > 1 && ` (${draw.config.count} números)`}
+                            </Badge>
+                          </div>
+                        )}
+                        
+                        {/* Configurações de times - removido */}
                         
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <span>
@@ -162,16 +211,11 @@ export default function CompanyDraws() {
                               Executado em: {format(new Date(draw.executed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                             </span>
                           )}
-                          {draw.participants_count > 0 && (
-                            <span>
-                              {draw.participants_count} participante{draw.participants_count > 1 ? 's' : ''}
-                            </span>
-                          )}
                         </div>
                       </div>
                       
                       <div className="flex gap-2 flex-col items-end">
-                        {draw.status === 'draft' && (
+                        {!draw.executed_at && (
                           <Link to={`/${companySlug}/draws/${draw.id}/execute`} state={{ draw }}>
                             <GradientButton>
                               <Sparkles className="w-4 h-4 mr-2" />
@@ -179,23 +223,30 @@ export default function CompanyDraws() {
                             </GradientButton>
                           </Link>
                         )}
-                        {draw.status === 'executed' && draw.results && draw.results.winner && (
+                        {draw.executed_at && draw.result && draw.result.winner && (
                           <div className="text-right w-full max-w-md">
                             <div className="bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-lg px-4 py-3">
-                              {draw.type === 'teams' ? (
+                              {draw.type === 'elimination' ? (
                                 <>
-                                  <p className="text-sm mb-2">Times Formados</p>
+                                  <p className="text-sm mb-2">Ordem de Eliminação</p>
                                   <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
                                     {(() => {
                                       try {
-                                        const teams = JSON.parse(draw.results.winner);
-                                        return Object.entries(teams).map(([teamName, members]: [string, any]) => (
-                                          <div key={teamName} className="bg-white/20 rounded p-1">
-                                            <strong>{teamName}:</strong> {members.join(', ')}
-                                          </div>
-                                        ));
+                                        const result = JSON.parse(draw.result.winner);
+                                        return (
+                                          <>
+                                            {result.eliminated.map((name: string, index: number) => (
+                                              <div key={index} className="bg-white/20 rounded p-1">
+                                                ❌ {index + 1}º eliminado: <strong>{name}</strong>
+                                              </div>
+                                            ))}
+                                            <div className="bg-green-500/30 rounded p-2 mt-2">
+                                              🏆 <strong>Vencedor: {result.winner}</strong>
+                                            </div>
+                                          </>
+                                        );
                                       } catch {
-                                        return <p className="text-sm">{draw.results.winner}</p>;
+                                        return <p className="text-sm">{draw.result.winner}</p>;
                                       }
                                     })()}
                                   </div>
@@ -206,14 +257,14 @@ export default function CompanyDraws() {
                                   <div className="text-xs max-h-32 overflow-y-auto">
                                     {(() => {
                                       try {
-                                        const shuffled = JSON.parse(draw.results.winner);
+                                        const shuffled = JSON.parse(draw.result.winner);
                                         return shuffled.map((item: string, index: number) => (
                                           <div key={index}>
                                             #{index + 1} {item}
                                           </div>
                                         ));
                                       } catch {
-                                        return <p>{draw.results.winner}</p>;
+                                        return <p>{draw.result.winner}</p>;
                                       }
                                     })()}
                                   </div>
@@ -221,11 +272,11 @@ export default function CompanyDraws() {
                               ) : (
                                 <>
                                   <p className="text-sm">
-                                    {draw.type === 'numeric_range' && draw.results.winner.includes(',') 
+                                    {draw.type === 'numeric_range' && draw.result.winner.includes(',') 
                                       ? 'Números Sorteados:' 
                                       : 'Vencedor:'}
                                   </p>
-                                  <p className="text-lg font-bold break-words">{draw.results.winner}</p>
+                                  <p className="text-lg font-bold break-words">{draw.result.winner}</p>
                                 </>
                               )}
                             </div>

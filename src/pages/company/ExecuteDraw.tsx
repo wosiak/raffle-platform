@@ -29,34 +29,37 @@ export default function ExecuteDraw() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [eliminationState, setEliminationState] = useState<{
+    participants: string[];
+    eliminated: string[];
+    isEliminating: boolean;
+    currentEliminated: string | null;
+  }>({
+    participants: [],
+    eliminated: [],
+    isEliminating: false,
+    currentEliminated: null,
+  });
 
   const executeMutation = useMutation({
-    mutationFn: async (selectedWinner: string) => {
+    mutationFn: async (data: { winner: string }) => {
       if (!supabase) throw new Error('Supabase não configurado');
       
       const results = {
-        winner: selectedWinner,
+        winner: data.winner,
         all_participants: draw.items ? draw.items.map((item: DrawItem) => item.value) : [],
         executed_at: new Date().toISOString(),
       };
       
       const updateData: any = {
-        status: 'executed',
-        results: results,
+        result: results,
+        winner: data.winner,
         executed_at: new Date().toISOString(),
       };
       
-      // Adicionar campos opcionais apenas se as colunas existirem
+      // Adicionar executed_by_user_id se o usuário estiver definido
       if (user?.id) {
         updateData.executed_by_user_id = user.id;
-      }
-      
-      if (draw.items && draw.items.length > 0) {
-        updateData.participants_count = draw.items.length;
-      } else if (draw.type === 'numeric_range') {
-        const min = draw.config.min || 1;
-        const max = draw.config.max || 100;
-        updateData.participants_count = max - min + 1;
       }
       
       const { error } = await supabase
@@ -69,7 +72,7 @@ export default function ExecuteDraw() {
         throw error;
       }
       
-      return selectedWinner;
+      return data.winner;
     },
     onSuccess: () => {
       setShowConfetti(true);
@@ -82,7 +85,40 @@ export default function ExecuteDraw() {
     },
   });
 
-  const handleExecute = () => {
+  const handleExecute = async () => {
+    // Se é tipo eliminação, fazer animação especial
+    if (draw.type === 'elimination') {
+      if (!draw.items || draw.items.length < 2) {
+        toast.error('Necessário pelo menos 2 participantes');
+        return;
+      }
+      startEliminationAnimation();
+      return;
+    }
+    
+    // Se é tipo all_participants, usar items que já foram salvos
+    if (draw.type === 'all_participants') {
+      if (!draw.items || draw.items.length === 0) {
+        toast.error('Nenhum participante encontrado no sorteio');
+        return;
+      }
+      
+      setIsExecuting(true);
+      
+      const winnersCount = draw.config.winnersCount || 1;
+      if (winnersCount > draw.items.length) {
+        toast.error('Número de vencedores maior que participantes disponíveis');
+        setIsExecuting(false);
+        return;
+      }
+      
+      // Executar sorteio usando items já salvos
+      const result = executeAllParticipantsDraw(draw.items, winnersCount);
+      animateDrawing(result);
+      return;
+    }
+    
+    // Outros tipos de sorteio (comportamento normal)
     setIsExecuting(true);
     
     // Gerar resultado baseado no tipo
@@ -121,15 +157,6 @@ export default function ExecuteDraw() {
         result = executeShuffleDraw(draw.items);
         break;
         
-      case 'elimination':
-        if (!draw.items || draw.items.length < 2) {
-          toast.error('Necessário pelo menos 2 participantes');
-          setIsExecuting(false);
-          return;
-        }
-        result = executeEliminationDraw(draw.items);
-        break;
-        
       default:
         toast.error('Tipo de sorteio não suportado');
         setIsExecuting(false);
@@ -138,6 +165,55 @@ export default function ExecuteDraw() {
     
     // Animação de sorteio
     animateDrawing(result);
+  };
+
+  // Animação especial para eliminação
+  const startEliminationAnimation = async () => {
+    const participants = draw.items.map((item: DrawItem) => item.value);
+    setEliminationState({
+      participants: [...participants],
+      eliminated: [],
+      isEliminating: true,
+      currentEliminated: null,
+    });
+    
+    const participantsCopy = [...participants];
+    const eliminationOrder: string[] = [];
+    
+    // Eliminar um por um
+    while (participantsCopy.length > 1) {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s entre eliminações
+      
+      const randomIndex = Math.floor(Math.random() * participantsCopy.length);
+      const eliminated = participantsCopy[randomIndex];
+      eliminationOrder.push(eliminated);
+      participantsCopy.splice(randomIndex, 1);
+      
+      setEliminationState(prev => ({
+        ...prev,
+        participants: [...participantsCopy],
+        eliminated: [...eliminationOrder],
+        currentEliminated: eliminated,
+      }));
+    }
+    
+    // Vencedor final
+    const finalWinner = participantsCopy[0];
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setEliminationState(prev => ({
+      ...prev,
+      isEliminating: false,
+    }));
+    
+    // Salvar resultado
+    const resultData = JSON.stringify({
+      eliminated: eliminationOrder,
+      winner: finalWinner,
+    });
+    
+    setWinner(finalWinner);
+    executeMutation.mutate({ winner: resultData });
   };
 
   const animateDrawing = (finalResult: any) => {
@@ -161,7 +237,7 @@ export default function ExecuteDraw() {
         clearInterval(interval);
         setWinner(finalResult);
         setIsExecuting(false);
-        executeMutation.mutate(finalResult);
+        executeMutation.mutate({ winner: finalResult });
       }
     }, 100);
   };
@@ -247,7 +323,28 @@ export default function ExecuteDraw() {
       participants.splice(index, 1);
     }
     
-    return participants[0].value; // Vencedor
+    // Retornar ordem de eliminação + vencedor
+    const result = {
+      eliminated: eliminationOrder,
+      winner: participants[0].value
+    };
+    
+    return JSON.stringify(result);
+  };
+
+  // Sorteio de todos os participantes (global)
+  const executeAllParticipantsDraw = (items: any[], winnersCount: number): string => {
+    const available = [...items];
+    const winners = [];
+    
+    // Sortear N vencedores
+    for (let i = 0; i < winnersCount && available.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * available.length);
+      winners.push(available[randomIndex].value);
+      available.splice(randomIndex, 1);
+    }
+    
+    return winnersCount === 1 ? winners[0] : winners.join(', ');
   };
 
   const handleReset = () => {
@@ -293,7 +390,76 @@ export default function ExecuteDraw() {
 
         <GlassCard className="p-12">
           <AnimatePresence mode="wait">
-            {!winner ? (
+            {/* Estado de Eliminação */}
+            {eliminationState.isEliminating ? (
+              <motion.div
+                key="elimination"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-4"
+              >
+                <h2 className="text-2xl font-bold text-center mb-6">
+                  🎯 Eliminação em Andamento
+                </h2>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {draw.items.map((item: DrawItem) => {
+                    const isEliminated = eliminationState.eliminated.includes(item.value);
+                    const isActive = eliminationState.participants.includes(item.value);
+                    const isCurrent = eliminationState.currentEliminated === item.value;
+                    
+                    return (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 1, scale: 1 }}
+                        animate={{
+                          opacity: isEliminated ? 0.3 : 1,
+                          scale: isCurrent ? 0.9 : 1,
+                        }}
+                        className={`relative p-4 rounded-lg text-center font-bold transition-all ${
+                          isEliminated 
+                            ? 'bg-red-100 border-2 border-red-400' 
+                            : isActive 
+                            ? 'bg-gradient-to-br from-violet-100 to-cyan-100 border-2 border-violet-400 shadow-lg' 
+                            : 'bg-gray-100'
+                        }`}
+                      >
+                        <span
+                          className={`relative ${
+                            isEliminated ? 'text-red-600 line-through' : 'text-violet-900'
+                          }`}
+                        >
+                          {item.value}
+                        </span>
+                        {isEliminated && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-4xl">❌</span>
+                          </div>
+                        )}
+                        {isActive && eliminationState.participants.length === 1 && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="absolute -top-2 -right-2"
+                          >
+                            <span className="text-3xl">👑</span>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+                
+                <div className="text-center mt-6 p-4 bg-violet-50 rounded-lg">
+                  <p className="text-violet-900 font-medium">
+                    {eliminationState.participants.length > 1 
+                      ? `${eliminationState.participants.length} participantes restantes...` 
+                      : '🎉 Vencedor definido!'}
+                  </p>
+                </div>
+              </motion.div>
+            ) : !winner ? (
               <motion.div
                 key="button"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -310,7 +476,7 @@ export default function ExecuteDraw() {
                 </p>
                 <GradientButton
                   onClick={handleExecute}
-                  disabled={isExecuting}
+                  disabled={isExecuting || eliminationState.isEliminating}
                   className="px-12 py-6 text-xl"
                 >
                   <Sparkles className="w-6 h-6 mr-3" />

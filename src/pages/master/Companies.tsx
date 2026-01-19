@@ -11,14 +11,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Building2, Plus, LogIn, LogOut, Edit, Trash2 } from 'lucide-react';
+import { Building2, Plus, LogIn, LogOut, Edit, Trash2, Users, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Company {
   id: string;
   name: string;
   slug: string;
   status: string;
+  created_at: string;
+}
+
+interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  cpf: string;
+  phone: string;
   created_at: string;
 }
 
@@ -43,6 +54,33 @@ export default function MasterCompanies() {
       
       if (error) throw error;
       return data as Company[];
+    },
+  });
+
+  // Carregar participantes (total e últimos 5)
+  const { data: participantsData } = useQuery({
+    queryKey: ['participants-summary'],
+    queryFn: async () => {
+      if (!supabase) throw new Error('Supabase não configurado');
+      
+      // Total de participantes
+      const { count } = await supabase
+        .from('participants')
+        .select('*', { count: 'exact', head: true });
+      
+      // Últimos 5 participantes
+      const { data: recent, error } = await supabase
+        .from('participants')
+        .select('id, name, email, cpf, phone, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      
+      return {
+        total: count || 0,
+        recent: recent as Participant[],
+      };
     },
   });
 
@@ -108,6 +146,49 @@ export default function MasterCompanies() {
     navigate('/login');
   };
 
+  const handleDownloadCSV = async () => {
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Criar CSV
+      const headers = ['Nome', 'Email', 'CPF', 'Telefone', 'WhatsApp', 'Endereço', 'Instagram', 'Facebook', 'Data Cadastro'];
+      const rows = data.map(p => [
+        p.name,
+        p.email,
+        p.cpf,
+        p.phone,
+        p.whatsapp || '',
+        p.address,
+        p.instagram || '',
+        p.facebook || '',
+        format(new Date(p.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+      ]);
+      
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // Download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `participantes_${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
+      link.click();
+      
+      toast.success('CSV baixado com sucesso!');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao baixar CSV');
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <AnimatedBackground />
@@ -151,6 +232,7 @@ export default function MasterCompanies() {
         </div>
 
         {/* Lista de empresas */}
+        <h2 className="text-2xl font-bold mb-4">Empresas</h2>
         {isLoading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto"></div>
@@ -197,6 +279,75 @@ export default function MasterCompanies() {
             ))}
           </div>
         )}
+
+        {/* Card de Participantes */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8"
+        >
+          <h2 className="text-2xl font-bold mb-4">Participantes</h2>
+          <GlassCard className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Users className="w-8 h-8 text-violet-500" />
+                <div>
+                  <h3 className="text-xl font-bold">Cadastros Globais</h3>
+                  <p className="text-sm text-gray-500">Todos os participantes do sistema</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadCSV}
+                  disabled={!participantsData?.total}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar CSV
+                </Button>
+                <GradientButton onClick={() => navigate('/master/participants')}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Ver Todos
+                </GradientButton>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Estatísticas */}
+              <div className="bg-gradient-to-br from-violet-900/20 to-cyan-900/20 backdrop-blur-sm rounded-lg p-4 border border-violet-500/30">
+                <p className="text-sm text-gray-300 mb-1">Total de Participantes</p>
+                <p className="text-4xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                  {participantsData?.total || 0}
+                </p>
+              </div>
+
+              {/* Últimos cadastros */}
+              <div className="bg-gradient-to-br from-violet-900/20 to-cyan-900/20 backdrop-blur-sm rounded-lg p-4 border border-violet-500/30">
+                <p className="text-sm text-gray-300 mb-3 font-semibold">Últimos Cadastros</p>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {participantsData?.recent && participantsData.recent.length > 0 ? (
+                    participantsData.recent.map((participant) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center justify-between text-xs bg-white/10 backdrop-blur-sm rounded px-2 py-1 border border-violet-400/20"
+                      >
+                        <span className="font-medium text-violet-200 truncate max-w-[150px]">
+                          {participant.name}
+                        </span>
+                        <span className="text-gray-400">
+                          {format(new Date(participant.created_at), 'dd/MM', { locale: ptBR })}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Nenhum participante ainda</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
 
         {/* Dialog criar empresa */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

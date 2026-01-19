@@ -8,6 +8,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 // Pages
 import Login from '@/pages/Login';
 import MasterCompanies from '@/pages/master/Companies';
+import MasterParticipants from '@/pages/master/Participants';
 import CompanyDashboard from '@/pages/company/Dashboard';
 import CompanyDraws from '@/pages/company/Draws';
 import CompanyNewDraw from '@/pages/company/NewDraw';
@@ -41,6 +42,15 @@ function App() {
               element={
                 <ProtectedRoute requireMaster>
                   <MasterCompanies />
+                </ProtectedRoute>
+              }
+            />
+            
+            <Route
+              path="/master/participants"
+              element={
+                <ProtectedRoute requireMaster>
+                  <MasterParticipants />
                 </ProtectedRoute>
               }
             />

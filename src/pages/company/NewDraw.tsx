@@ -17,9 +17,9 @@ import { toast } from 'sonner';
 
 const drawTypes = [
   { value: 'list', label: 'Lista de Nomes', icon: Users, description: 'Sorteio a partir de uma lista' },
+  { value: 'all_participants', label: 'Participantes', icon: Users, description: 'Todos os participantes cadastrados' },
   { value: 'numeric_range', label: 'Faixa Numérica', icon: Hash, description: 'Sorteio de números' },
   { value: 'weighted', label: 'Ponderado', icon: Trophy, description: 'Com pesos diferentes' },
-  { value: 'teams', label: 'Times', icon: Users, description: 'Dividir em times' },
   { value: 'shuffle', label: 'Embaralhar', icon: ShuffleIcon, description: 'Embaralhar ordem' },
   { value: 'elimination', label: 'Eliminação', icon: Target, description: 'Eliminatória' },
 ];
@@ -38,20 +38,64 @@ export default function CompanyNewDraw() {
   });
 
   const [itemInput, setItemInput] = useState('');
+  const [participantsCount, setParticipantsCount] = useState(0);
+
+  // Carregar total de participantes quando tipo for 'all_participants'
+  React.useEffect(() => {
+    const loadParticipantsCount = async () => {
+      if (formData.type === 'all_participants' && supabase) {
+        const { count } = await supabase
+          .from('participants')
+          .select('*', { count: 'exact', head: true });
+        setParticipantsCount(count || 0);
+        
+        // Inicializar winnersCount com 1 se não estiver definido
+        if (!formData.config.winnersCount) {
+          setFormData(prev => ({
+            ...prev,
+            config: { ...prev.config, winnersCount: 1 }
+          }));
+        }
+      }
+    };
+    loadParticipantsCount();
+  }, [formData.type]);
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!supabase) throw new Error('Supabase não configurado');
       const companyId = getCurrentCompanyId();
       
+      let itemsToSave = data.items;
+      
+      // Se for tipo all_participants, buscar participantes do banco
+      if (data.type === 'all_participants') {
+        const { data: participants, error } = await supabase
+          .from('participants')
+          .select('id, name')
+          .order('name');
+        
+        if (error) throw error;
+        
+        if (!participants || participants.length === 0) {
+          throw new Error('Nenhum participante cadastrado no sistema');
+        }
+        
+        // Converter participantes para formato de items
+        itemsToSave = participants.map(p => ({
+          id: p.id,
+          value: p.name,
+          weight: 1,
+        }));
+      }
+      
       const { data: created, error } = await supabase
         .from('draws')
         .insert({
           ...data,
+          items: itemsToSave,
           company_id: companyId,
           created_by_user_id: user?.id,
-          status: 'draft',
-          participants_count: data.items?.length || 0,
         })
         .select()
         .single();
@@ -108,6 +152,21 @@ export default function CompanyNewDraw() {
       return;
     }
     
+    if (formData.type === 'all_participants') {
+      if (participantsCount === 0) {
+        toast.error('Não há participantes cadastrados no sistema');
+        return;
+      }
+      if (!formData.config.winnersCount || formData.config.winnersCount < 1) {
+        toast.error('Defina o número de vencedores (mínimo 1)');
+        return;
+      }
+      if (formData.config.winnersCount > participantsCount) {
+        toast.error(`Número de vencedores não pode ser maior que ${participantsCount}`);
+        return;
+      }
+    }
+    
     if (formData.type === 'numeric_range') {
       if (!formData.config.min || !formData.config.max) {
         toast.error('Defina o número inicial e final');
@@ -122,17 +181,6 @@ export default function CompanyNewDraw() {
     if (formData.type === 'weighted' && formData.items.length === 0) {
       toast.error('Adicione pelo menos um participante');
       return;
-    }
-    
-    if (formData.type === 'teams') {
-      if (formData.items.length === 0) {
-        toast.error('Adicione pelo menos um participante');
-        return;
-      }
-      if (!formData.config.teams || formData.config.teams < 2) {
-        toast.error('Defina pelo menos 2 times');
-        return;
-      }
     }
     
     if (formData.type === 'shuffle' && formData.items.length === 0) {
@@ -195,7 +243,16 @@ export default function CompanyNewDraw() {
               <Label>Tipo de Sorteio</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
+                onValueChange={(value) => {
+                  // Limpar items ao trocar tipo de sorteio
+                  setFormData({ 
+                    ...formData, 
+                    type: value,
+                    items: [], // Limpa participantes ao trocar tipo
+                    config: {} // Limpa configurações ao trocar tipo
+                  });
+                  setItemInput(''); // Limpa input
+                }}
               >
                 <SelectTrigger className="bg-white/10 backdrop-blur-sm border-white/20 text-gray-900 hover:bg-white/20">
                   <SelectValue />
@@ -266,6 +323,44 @@ export default function CompanyNewDraw() {
                 <p className="text-sm text-gray-500 mt-2">
                   {formData.items.length} participante{formData.items.length !== 1 ? 's' : ''}
                 </p>
+              </div>
+            )}
+
+            {/* Configuração para tipo Participantes */}
+            {formData.type === 'all_participants' && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-violet-900/20 to-cyan-900/20 backdrop-blur-sm rounded-lg p-4 border border-violet-500/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-300">Participantes Disponíveis</p>
+                    <p className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                      {participantsCount}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Todos os participantes cadastrados no sistema participarão automaticamente
+                  </p>
+                </div>
+
+                <div>
+                  <Label>Número de Vencedores</Label>
+                  <Input
+                    type="number"
+                    value={formData.config.winnersCount !== undefined ? formData.config.winnersCount : 1}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value);
+                      setFormData({
+                        ...formData,
+                        config: { ...formData.config, winnersCount: value >= 1 ? value : 1 }
+                      });
+                    }}
+                    placeholder="Ex: 1"
+                    min="1"
+                    max={participantsCount}
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    Quantos participantes serão sorteados como vencedores
+                  </p>
+                </div>
               </div>
             )}
 
@@ -390,67 +485,6 @@ export default function CompanyNewDraw() {
                 <p className="text-sm text-gray-500 mt-2">
                   Quanto maior o peso, maior a chance de ser sorteado
                 </p>
-              </div>
-            )}
-
-            {/* Configuração para times */}
-            {formData.type === 'teams' && (
-              <div className="space-y-4">
-                <div>
-                  <Label>Número de Times</Label>
-                  <Input
-                    type="number"
-                    value={formData.config.teams || 2}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      config: { ...formData.config, teams: parseInt(e.target.value) || 2 }
-                    })}
-                    placeholder="2"
-                    min="2"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Participantes</Label>
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      value={itemInput}
-                      onChange={(e) => setItemInput(e.target.value)}
-                      placeholder="Nome do participante"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddItem();
-                        }
-                      }}
-                    />
-                    <Button type="button" onClick={handleAddItem}>
-                      Adicionar
-                    </Button>
-                  </div>
-                  
-                  {formData.items.length > 0 && (
-                    <div className="border rounded-lg p-4 space-y-2 max-h-64 overflow-y-auto bg-white">
-                      {formData.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-2 bg-gray-100 rounded text-gray-900"
-                        >
-                          <span className="font-medium">{item.value}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            Remover
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 

@@ -58,7 +58,7 @@ export default function CompanyDashboard() {
         .from('draws')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
-        .eq('status', 'executed');
+        .not('executed_at', 'is', null);
       
       return {
         totalDraws: totalDraws || 0,
